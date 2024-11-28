@@ -1,3 +1,5 @@
-module github.com/traefik/plugindemo
+module github.com/fopina/traefik-commonname-validator-plugin
 
-go 1.19
+go 1.22.1
+
+toolchain go1.23.1
