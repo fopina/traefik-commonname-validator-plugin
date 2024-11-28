@@ -1,0 +1,16 @@
+FROM alpine:3.20
+
+RUN apk add --no-cache bats curl unzip
+
+WORKDIR /bats-lib
+RUN curl -Lo a.zip https://github.com/ztombol/bats-assert/archive/9f88b4207da750093baabc4e3f41bf68f0dd3630.zip \
+ && unzip a.zip \
+ && mv bats-assert-* bats-assert \
+ && rm a.zip
+
+RUN curl -Lo a.zip https://github.com/ztombol/bats-support/archive/004e707638eedd62e0481e8cdc9223ad471f12ee.zip \
+ && unzip a.zip \
+ && mv bats-support-* bats-support \
+ && rm a.zip
+
+WORKDIR /tests

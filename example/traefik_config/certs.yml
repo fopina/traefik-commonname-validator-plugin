@@ -1,0 +1,10 @@
+tls:
+  certificates:
+    - certFile: /etc/traefik/dynamic/certs/_.7f000001.nip.io/cert.pem
+      keyFile: /etc/traefik/dynamic/certs/_.7f000001.nip.io/key.pem
+  options:
+    mtlsTest:
+      clientAuth:
+        caFiles:
+          - /etc/traefik/dynamic/certs/good-one.pem
+        clientAuthType: RequireAndVerifyClientCert

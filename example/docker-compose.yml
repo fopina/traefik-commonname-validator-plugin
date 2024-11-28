@@ -1,0 +1,77 @@
+services:
+  setup:
+    # create CAs and certificates for this example
+    image: ghcr.io/fopina/minica:alpine
+    entrypoint: "/bin/sh -c"
+    command: >
+      "
+      test -e /data/certs/good-one.pem && exit 0 ||
+      mkdir -p /data/certs &&
+      minica -ca-cert /data/certs/good-one.pem -ca-key /data/certs/good-one-key.pem -ca-cn "good-one" -domains '*.7f000001.nip.io' &&
+      minica -ca-cert /data/certs/good-one.pem -ca-key /data/certs/good-one-key.pem -domains 'auth-client' &&
+      minica -ca-cert /data/certs/good-one.pem -ca-key /data/certs/good-one-key.pem -domains 'auth2-client' &&
+      minica -ca-cert /data/certs/good-one.pem -ca-key /data/certs/good-one-key.pem -domains 'not-auth-client' &&
+      minica -ca-cert /data/certs/bad-one.pem -ca-key /data/certs/bad-one-key.pem -ca-cn "bad-one" -domains 'bad-client' &&
+      cp -a _.7f000001.nip.io /data/certs/ &&
+      cp -a auth-client /data/certs/ &&
+      cp -a auth2-client /data/certs/ &&
+      cp -a not-auth-client /data/certs/ &&
+      cp -a bad-client /data/certs/
+      "
+    volumes:
+      - ./traefik_config/:/data
+
+  traefik:
+    image: traefik:v2.9
+    depends_on:
+      - setup
+    networks:
+      default:
+        aliases:
+          # just for running bats tests within container network
+          # same hostnames also work outside, on different port :)
+          - whoami.7f000001.nip.io
+          - whoami-plugin.7f000001.nip.io
+    command:
+      - --api.insecure=true
+      - --providers.docker=true
+      - --providers.file.directory=/etc/traefik/dynamic
+      - --providers.file.watch=true
+      - --entrypoints.web.address=:80
+      - --entrypoints.webtls.address=:443
+      - --entrypoints.webtls.http.tls.options=mtlsTest@file
+      - --experimental.localplugins.example.modulename=github.com/traefik/plugindemo
+    ports:
+      - 127.0.0.1:8888:80
+      - 127.0.0.1:8889:443
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock
+      - ./traefik_config/:/etc/traefik/dynamic/
+      - ../:/plugins-local/src/github.com/traefik/plugindemo
+
+  whoami:
+    image: traefik/whoami
+    labels:
+      traefik.http.services.whoami.loadbalancer.server.port: 80
+      traefik.http.routers.whoamix.rule: Host(`whoami.7f000001.nip.io`)
+      traefik.http.routers.whoamix.entrypoints: webtls
+      traefik.http.routers.whoamix.tls: "true"
+
+      traefik.http.middlewares.my-plugin.plugin.example.headers.Foo: Bar
+      traefik.http.routers.whoami-plugin.rule: Host(`whoami-plugin.7f000001.nip.io`)
+      traefik.http.routers.whoami-plugin.entrypoints: webtls
+      traefik.http.routers.whoami-plugin.tls: "true"
+      traefik.http.routers.whoami-plugin.tls.options: mtlsTest@file
+      traefik.http.routers.whoami-plugin.middlewares: my-plugin
+
+  test:
+    # run bats tests to assert everything is as expected!
+    depends_on:
+    - traefik
+    - whoami
+    build:
+      context: .
+      dockerfile: Dockerfile.tests
+    command: ./tests.bats
+    volumes:
+      - ./:/tests:ro
