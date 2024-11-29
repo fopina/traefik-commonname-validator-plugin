@@ -40,14 +40,14 @@ services:
       - --entrypoints.web.address=:80
       - --entrypoints.webtls.address=:443
       - --entrypoints.webtls.http.tls.options=mtlsTest@file
-      - --experimental.localplugins.example.modulename=github.com/traefik/plugindemo
+      - --experimental.localplugins.cnvalidator.modulename=github.com/fopina/traefik-commonname-validator-plugin
     ports:
       - 127.0.0.1:8888:80
       - 127.0.0.1:8889:443
     volumes:
       - /var/run/docker.sock:/var/run/docker.sock
       - ./traefik_config/:/etc/traefik/dynamic/
-      - ../:/plugins-local/src/github.com/traefik/plugindemo
+      - ../:/plugins-local/src/github.com/fopina/traefik-commonname-validator-plugin
 
   whoami:
     image: traefik/whoami
@@ -57,7 +57,9 @@ services:
       traefik.http.routers.whoamix.entrypoints: webtls
       traefik.http.routers.whoamix.tls: "true"
 
-      traefik.http.middlewares.my-plugin.plugin.example.headers.Foo: Bar
+      traefik.http.middlewares.my-plugin.plugin.cnvalidator.debug: 'true'
+      traefik.http.middlewares.my-plugin.plugin.cnvalidator.allowed[0]: auth-client
+      traefik.http.middlewares.my-plugin.plugin.cnvalidator.allowed[1]: auth2-client
       traefik.http.routers.whoami-plugin.rule: Host(`whoami-plugin.7f000001.nip.io`)
       traefik.http.routers.whoami-plugin.entrypoints: webtls
       traefik.http.routers.whoami-plugin.tls: "true"
