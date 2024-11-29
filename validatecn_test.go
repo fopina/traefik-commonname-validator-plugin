@@ -7,18 +7,17 @@ import (
 	"testing"
 )
 
-func TestDemo(t *testing.T) {
+func TestValidateCN(t *testing.T) {
 	cfg := CreateConfig()
-	cfg.Headers["X-Host"] = "[[.Host]]"
-	cfg.Headers["X-Method"] = "[[.Method]]"
-	cfg.Headers["X-URL"] = "[[.URL]]"
-	cfg.Headers["X-URL"] = "[[.URL]]"
-	cfg.Headers["X-Demo"] = "test"
+	if len(cfg.Allowed) != 1 {
+		t.Errorf("unexpected initial length: %d", len(cfg.Allowed))
+	}
+	cfg.Allowed = []string{"Foo", "Bar"}
 
 	ctx := context.Background()
 	next := http.HandlerFunc(func(rw http.ResponseWriter, req *http.Request) {})
 
-	handler, err := New(ctx, next, cfg, "demo-plugin")
+	handler, err := New(ctx, next, cfg, "test-plugin")
 	if err != nil {
 		t.Fatal(err)
 	}

@@ -3,7 +3,7 @@ package traefik_commonname_validator_plugin
 
 import (
 	"context"
-	"crypto/x509"
+	"crypto/tls"
 	"fmt"
 	"log"
 	"net/http"
@@ -23,8 +23,8 @@ func CreateConfig() *Config {
 	}
 }
 
-// Demo a Demo plugin.
-type Demo struct {
+// ValidateCN a ValidateCN plugin.
+type ValidateCN struct {
 	next    http.Handler
 	allowed []string
 	debug   bool
@@ -40,7 +40,7 @@ func New(ctx context.Context, next http.Handler, config *Config, name string) (h
 		return nil, fmt.Errorf("allowed cannot be empty")
 	}
 
-	return &Demo{
+	return &ValidateCN{
 		allowed: config.Allowed,
 		debug:   config.Debug,
 		next:    next,
@@ -48,26 +48,29 @@ func New(ctx context.Context, next http.Handler, config *Config, name string) (h
 	}, nil
 }
 
-func (p *Demo) getCertInfo(certs []*x509.Certificate) string {
-	// we only care about the first cert of the chain, the leaf
-	// rest of the chain has (or should have) been validated by Traefik mTLS
-	if len(certs) == 0 {
+func (p *ValidateCN) getCertInfo(tls *tls.ConnectionState) string {
+	if tls == nil {
 		return ""
 	}
-	return certs[0].Subject.CommonName
+	// we only care about the first cert of the chain, the leaf
+	// rest of the chain has (or should have) been validated by Traefik mTLS
+	if len(tls.PeerCertificates) == 0 {
+		return ""
+	}
+	return tls.PeerCertificates[0].Subject.CommonName
 }
 
-func (a *Demo) ServeHTTP(rw http.ResponseWriter, req *http.Request) {
-	actualCN := a.getCertInfo(req.TLS.PeerCertificates)
-	for _, allowedCN := range a.allowed {
+func (p *ValidateCN) ServeHTTP(rw http.ResponseWriter, req *http.Request) {
+	actualCN := p.getCertInfo(req.TLS)
+	for _, allowedCN := range p.allowed {
 		if actualCN == allowedCN {
-			a.next.ServeHTTP(rw, req)
+			p.next.ServeHTTP(rw, req)
 			return
 		}
 	}
 
-	if a.debug {
-		log.Printf("REJECTED: %s not part of %s", actualCN, a.allowed)
+	if p.debug {
+		log.Printf("REJECTED: %s not part of %s", actualCN, p.allowed)
 	}
 	rw.WriteHeader(http.StatusForbidden)
 	fmt.Fprintln(rw, "Forbidden")
