@@ -1,5 +1,9 @@
 # CommonName Validator
 
+[![release](https://img.shields.io/github/v/release/fopina/traefik-commonname-validator-plugin)](https://github.com/fopina/traefik-commonname-validator-plugin/releases)
+[![test](https://github.com/fopina/traefik-commonname-validator-plugin/actions/workflows/test.yml/badge.svg)](https://github.com/fopina/traefik-commonname-validator-plugin/actions/workflows/test.yml)
+[![codecov](https://codecov.io/github/fopina/traefik-commonname-validator-plugin/graph/badge.svg)](https://codecov.io/github/fopina/traefik-commonname-validator-plugin)
+
 CommonName Validator is a middleware plugin for [Traefik](https://github.com/traefik/traefik) which allows authorizing mTLS requests based on subject CN.
 
 ## Configuration
