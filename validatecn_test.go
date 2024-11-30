@@ -105,7 +105,7 @@ type Equatable interface {
 	~int | ~int32 | ~int64 | ~float32 | ~float64 | ~string | ~bool
 }
 
-func assertEqual[T Equatable](t *testing.T, expected, actual T) {
+func assertEqual[TT Equatable](t *testing.T, expected, actual TT) {
 	t.Helper()
 	if expected != actual {
 		t.Errorf("got status code %v, want %v", expected, actual)
