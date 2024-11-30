@@ -70,3 +70,8 @@ jobs:
         run: make yaegi_test
         env:
           GOPATH: ${{ github.workspace }}/go
+
+      - name: Upload coverage to Codecov
+        uses: codecov/codecov-action@v5
+        with:
+          flags: unittests
