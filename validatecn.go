@@ -4,6 +4,7 @@ package traefik_commonname_validator_plugin
 import (
 	"context"
 	"crypto/tls"
+	"errors"
 	"fmt"
 	"log"
 	"net/http"
@@ -37,7 +38,7 @@ func New(ctx context.Context, next http.Handler, config *Config, name string) (h
 		log.Printf("Configuration: %v", config)
 	}
 	if len(config.Allowed) == 0 {
-		return nil, fmt.Errorf("allowed cannot be empty")
+		return nil, errors.New("allowed cannot be empty")
 	}
 
 	return &ValidateCN{
@@ -73,5 +74,8 @@ func (p *ValidateCN) ServeHTTP(rw http.ResponseWriter, req *http.Request) {
 		log.Printf("REJECTED: %s not part of %s", actualCN, p.allowed)
 	}
 	rw.WriteHeader(http.StatusForbidden)
-	fmt.Fprintln(rw, "Forbidden")
+	_, err := fmt.Fprintln(rw, "Forbidden")
+	if err != nil {
+		log.Printf("Error writing reply: %v", err)
+	}
 }
