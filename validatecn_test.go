@@ -53,27 +53,50 @@ NWvmzZuu6yvspxgA1F7S0wvFT9cqDRyZsWW/b0xvl1HOH0/EJ0wc0WkR
 
 func TestValidateCN(t *testing.T) {
 	cfg := CreateConfig()
-	if len(cfg.Allowed) != 1 {
-		t.Errorf("unexpected initial length: %d", len(cfg.Allowed))
-	}
+	assertEqual(t, len(cfg.Allowed), 1)
 	cfg.Allowed = []string{"auth-client"}
 
 	ctx := context.Background()
 	next := http.HandlerFunc(func(rw http.ResponseWriter, req *http.Request) {})
 
 	handler, err := New(ctx, next, cfg, "test-plugin")
-	if err != nil {
-		t.Fatal(err)
-	}
+	assertNoError(t, err)
 
 	recorder := httptest.NewRecorder()
 
 	req, err := http.NewRequestWithContext(ctx, http.MethodGet, "http://localhost", nil)
-	if err != nil {
-		t.Fatal(err)
-	}
+	assertNoError(t, err)
 	req.TLS = buildTLSWith([]string{authClientCrt})
+	handler.ServeHTTP(recorder, req)
+	assertEqual(t, recorder.Result().StatusCode, 200)
 
+	recorder = httptest.NewRecorder()
+	req.TLS = buildTLSWith([]string{authClient2Crt})
+	handler.ServeHTTP(recorder, req)
+	assertEqual(t, recorder.Result().StatusCode, 403)
+}
+
+func TestValidateCNBothAllowed(t *testing.T) {
+	cfg := CreateConfig()
+	assertEqual(t, len(cfg.Allowed), 1)
+	cfg.Allowed = []string{"auth-client", "auth2-client"}
+
+	ctx := context.Background()
+	next := http.HandlerFunc(func(rw http.ResponseWriter, req *http.Request) {})
+
+	handler, err := New(ctx, next, cfg, "test-plugin")
+	assertNoError(t, err)
+
+	recorder := httptest.NewRecorder()
+
+	req, err := http.NewRequestWithContext(ctx, http.MethodGet, "http://localhost", nil)
+	assertNoError(t, err)
+	req.TLS = buildTLSWith([]string{authClientCrt, signingCA})
+	handler.ServeHTTP(recorder, req)
+	assertEqual(t, recorder.Result().StatusCode, 200)
+
+	recorder = httptest.NewRecorder()
+	req.TLS = buildTLSWith([]string{authClient2Crt, signingCA})
 	handler.ServeHTTP(recorder, req)
 	assertEqual(t, recorder.Result().StatusCode, 200)
 }
@@ -86,6 +109,13 @@ func assertEqual[T Equatable](t *testing.T, expected, actual T) {
 	t.Helper()
 	if expected != actual {
 		t.Errorf("got status code %v, want %v", expected, actual)
+	}
+}
+
+func assertNoError(t *testing.T, err error) {
+	t.Helper()
+	if err != nil {
+		t.Fatal(err)
 	}
 }
 
