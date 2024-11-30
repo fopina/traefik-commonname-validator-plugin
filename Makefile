@@ -4,6 +4,9 @@ export GO111MODULE=on
 
 default: lint test
 
+bootstrap: ## install build deps
+	go generate -tags tools tools/tools.go
+
 lint:
 	golangci-lint run
 

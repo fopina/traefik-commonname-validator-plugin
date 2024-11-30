@@ -36,7 +36,7 @@ load '/bats-lib/bats-assert/load'
            --key traefik_config/certs/auth-client/key.pem \
            https://whoami-plugin.7f000001.nip.io/
   assert_success
-  assert_output --partial 'Foo: Bar'
+  assert_output --partial 'X-Forwarded-Server'
 }
 
 @test "test whoami-plugin with auth2-client cert is also accepted" {
@@ -46,17 +46,15 @@ load '/bats-lib/bats-assert/load'
            --key traefik_config/certs/auth2-client/key.pem \
            https://whoami-plugin.7f000001.nip.io/
   assert_success
-  assert_output --partial 'Foo: Bar'
+  assert_output --partial 'X-Forwarded-Server'
 }
 
-@test "test whoami-plugin with not-auth-client cert is ALSO ACCEPTED FOR NOW BUT SHOULD NOT # FIXME" {
+@test "test whoami-plugin with not-auth-client cert is denied" {
   run curl -f \
            --cacert traefik_config/certs/good-one.pem \
            --cert traefik_config/certs/not-auth-client/cert.pem \
            --key traefik_config/certs/not-auth-client/key.pem \
            https://whoami-plugin.7f000001.nip.io/
-  # assert_failure 22
-  # assert_output --partial 'returned error: 403'
-  assert_success
-  assert_output --partial 'Foo: Bar'
+  assert_failure 22
+  assert_output --partial 'returned error: 403'
 }
