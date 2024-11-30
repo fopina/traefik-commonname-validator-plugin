@@ -11,7 +11,7 @@ lint:
 	golangci-lint run
 
 test:
-	go test -v -cover ./...
+	go test -v -cover -coverprofile="coverage.out" ./...
 
 yaegi_test:
 	yaegi test -v .
